@@ -1,0 +1,338 @@
+import java.util.Scanner;
+import java.io.*;
+
+class Task {
+    private String id;
+    private String title;
+    private String description;
+    private String status;
+
+    public Task(String id, String title, String description,
+                String status) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.status = status;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public void display() {
+        System.out.println("\nTask ID: " + id);
+        System.out.println("Title: " + title);
+        System.out.println("Description: " + description);
+        System.out.println("Status: " + status);
+        System.out.println("-------------------------");
+    }
+}
+
+class Node {
+    Task data;
+    Node next;
+
+    Node(Task data) {
+        this.data = data;
+        this.next = null;
+    }
+}
+
+class ToDoList {
+    private Node head;
+    private int count = 101;
+
+    Scanner sc = new Scanner(System.in);
+
+    // Add Task
+    public void addTask() {
+        System.out.print("Enter Task Title: ");
+        String title = sc.nextLine().trim();
+
+        if (title.isEmpty()) {
+            System.out.println("Task title cannot be empty!");
+            return;
+        }
+
+        System.out.print("Enter Description: ");
+        String description = sc.nextLine();
+
+        String id = "TD" + count++;
+
+        Task task = new Task(id, title, description, "Pending");
+        Node newNode = new Node(task);
+
+        if (head == null) {
+            head = newNode;
+        } else {
+            Node temp = head;
+            while (temp.next != null) {
+                temp = temp.next;
+            }
+            temp.next = newNode;
+        }
+
+        System.out.println("Task added successfully!");
+        System.out.println("Task ID: " + id);
+    }
+
+    // Display All Tasks
+    public void displayTasks() {
+        if (head == null) {
+            System.out.println("No tasks available.");
+            return;
+        }
+
+        Node temp = head;
+
+        while (temp != null) {
+            temp.data.display();
+            temp = temp.next;
+        }
+    }
+
+    // Find Task by ID
+    private Node findTask(String id) {
+        Node temp = head;
+
+        while (temp != null) {
+            if (temp.data.getId().equalsIgnoreCase(id)) {
+                return temp;
+            }
+            temp = temp.next;
+        }
+
+        return null;
+    }
+
+    // Mark Task Completed
+    public void markCompleted() {
+        System.out.print("Enter Task ID: ");
+        String id = sc.nextLine();
+
+        Node temp = findTask(id);
+
+        if (temp == null) {
+            System.out.println(id + " not found.");
+        } else if (temp.data.getStatus().equals("Completed")) {
+            System.out.println("Task is already completed.");
+        } else {
+            temp.data.setStatus("Completed");
+            System.out.println(id + " marked Completed.");
+        }
+    }
+
+    // Search Task by Keyword
+    public void searchTask() {
+        System.out.print("Enter keyword: ");
+        String keyword = sc.nextLine().toLowerCase();
+
+        Node temp = head;
+        boolean found = false;
+
+        while (temp != null) {
+            Task task = temp.data;
+
+            if (task.getTitle().toLowerCase().contains(keyword)
+                || task.getDescription().toLowerCase().contains(keyword)) {
+
+                task.display();
+                found = true;
+            }
+
+            temp = temp.next;
+        }
+
+        if (!found) {
+            System.out.println("No matching task found.");
+        }
+    }
+
+    // Delete Task
+    public void deleteTask() {
+        System.out.print("Enter Task ID: ");
+        String id = sc.nextLine();
+
+        if (head == null) {
+            System.out.println("No tasks available.");
+            return;
+        }
+
+        if (head.data.getId().equalsIgnoreCase(id)) {
+            head = head.next;
+            System.out.println("Task deleted successfully.");
+            return;
+        }
+
+        Node temp = head;
+
+        while (temp.next != null) {
+            if (temp.next.data.getId().equalsIgnoreCase(id)) {
+                temp.next = temp.next.next;
+                System.out.println("Task deleted successfully.");
+                return;
+            }
+            temp = temp.next;
+        }
+
+        System.out.println(id + " not found.");
+    }
+
+    // Save Tasks to File
+    public void saveToFile() {
+        try {
+            PrintWriter writer = new PrintWriter(
+                new FileWriter("todo.txt"));
+
+            Node temp = head;
+
+            while (temp != null) {
+                Task t = temp.data;
+
+                writer.println(
+                    t.getId() + "|" +
+                    t.getTitle().replace("|", "/") + "|" +
+                    t.getDescription().replace("|", "/") + "|" +
+                    t.getStatus()
+                );
+
+                temp = temp.next;
+            }
+
+            writer.close();
+            System.out.println("Data saved successfully.");
+
+        } catch (IOException e) {
+            System.out.println("Error saving file.");
+        }
+    }
+
+    // Load Tasks from File
+    public void loadFromFile() {
+        File file = new File("todo.txt");
+
+        if (!file.exists()) {
+            return;
+        }
+
+        try (BufferedReader reader =
+                 new BufferedReader(new FileReader(file))) {
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                String[] data = line.split("\\|", -1);
+
+                if (data.length == 4) {
+                    Task task = new Task(
+                        data[0], data[1], data[2], data[3]);
+
+                    Node newNode = new Node(task);
+
+                    if (head == null) {
+                        head = newNode;
+                    } else {
+                        Node temp = head;
+                        while (temp.next != null) {
+                            temp = temp.next;
+                        }
+                        temp.next = newNode;
+                    }
+
+                    int number = Integer.parseInt(
+                        data[0].substring(2));
+
+                    if (number >= count) {
+                        count = number + 1;
+                    }
+                }
+            }
+
+            System.out.println("Previous tasks loaded.");
+
+        } catch (IOException | NumberFormatException e) {
+            System.out.println("Error loading file.");
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+
+        Scanner sc = new Scanner(System.in);
+        ToDoList todo = new ToDoList();
+
+        todo.loadFromFile();
+
+        int choice;
+
+        do {
+            System.out.println("\n===== TO-DO LIST MANAGER =====");
+            System.out.println("1. Add Task");
+            System.out.println("2. Display All Tasks");
+            System.out.println("3. Mark Task Completed");
+            System.out.println("4. Search Task");
+            System.out.println("5. Delete Task");
+            System.out.println("6. Exit");
+
+            System.out.print("Enter your choice: ");
+
+            try {
+                choice = Integer.parseInt(sc.nextLine());
+
+                switch (choice) {
+                    case 1:
+                        todo.addTask();
+                        break;
+
+                    case 2:
+                        todo.displayTasks();
+                        break;
+
+                    case 3:
+                        todo.markCompleted();
+                        break;
+
+                    case 4:
+                        todo.searchTask();
+                        break;
+
+                    case 5:
+                        todo.deleteTask();
+                        break;
+
+                    case 6:
+                        todo.saveToFile();
+                        System.out.println("Thank you!");
+                        break;
+
+                    default:
+                        System.out.println("Invalid choice!");
+                }
+
+            } catch (NumberFormatException e) {
+                choice = 0;
+                System.out.println("Please enter a valid number.");
+            }
+
+        } while (choice != 6);
+
+        sc.close();
+    }
+}
